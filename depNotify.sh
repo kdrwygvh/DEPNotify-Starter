@@ -128,10 +128,10 @@ fi
 # Main heading that will be displayed under the image
 # If this variable is left blank, the generic banner will appear
   BANNER_TITLE="Welcome to $ORG_NAME"
-	
+
 # Update the variable below replacing "email helpdesk@company.com" with the actual plaintext instructions for your organization. Example "call 555-1212" or "email helpdesk@company.com"
   SUPPORT_CONTACT_DETAILS="email helpdesk@company.com"
-  
+
 # Paragraph text that will display under the main heading. For a new line, use \n
 # If this variable is left blank, the generic message will appear. Leave single
 # quotes below as double quotes will break the new lines.
@@ -202,9 +202,9 @@ fi
 # Paragraph text that will display under the main heading. For a new line, use \n
 # If this variable is left blank, the generic message will appear. Leave single
 # quotes below as double quotes will break the new lines.
-	ERROR_MAIN_TEXT='We are sorry that you are experiencing this inconvenience with your new Mac. However, we have the nerds to get you back up and running in no time! \n \n Please contact IT right away and we will take a look at your computer ASAP. \n \n'	
-	ERROR_MAIN_TEXT="$ERROR_MAIN_TEXT $SUPPORT_CONTACT_DETAILS"	
-	  
+  ERROR_MAIN_TEXT='We are sorry that you are experiencing this inconvenience with your new Mac. However, we have the nerds to get you back up and running in no time! \n \n Please contact IT right away and we will take a look at your computer ASAP. \n \n'
+  ERROR_MAIN_TEXT="$ERROR_MAIN_TEXT $SUPPORT_CONTACT_DETAILS"
+
 # Error status message that is displayed under the progress bar
   ERROR_STATUS="Setup Failed"
 
@@ -260,7 +260,7 @@ TRIGGER="event"
 # If using a name other than Self Service with Custom branding. Change the
 # name with the SELF_SERVICE_APP_NAME variable below. Keep .app on the end
   SELF_SERVICE_APP_NAME="Self Service.app"
-  
+
 # Number of seconds to wait (seconds) for the Self Service custon icon.
   SELF_SERVICE_CUSTOM_WAIT=20
 
@@ -296,7 +296,7 @@ TRIGGER="event"
 
   # Registration window title
     REGISTRATION_TITLE="Register Mac at $ORG_NAME"
-    
+
   # Registration status bar text
     REGISTRATION_STATUS="Waiting on completion of computer registration"
 
