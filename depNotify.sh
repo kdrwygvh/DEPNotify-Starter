@@ -174,7 +174,8 @@ fi
   # This wrapper allows variables that are created later to be used but also allow for
   # configuration of where the plist is stored
     INFO_PLIST_WRAPPER (){
-      DEP_NOTIFY_USER_INPUT_PLIST="/Users/$CURRENT_USER/Library/Preferences/menu.nomad.DEPNotifyUserInput.plist"
+      DEP_NOTIFY_USER_INPUT_PLIST="$CURRENT_USER_HOMEDIRECTORYPATH/Library/Preferences/menu.nomad.DEPNotifyUserInput.plist"
+
     }
 
 # Status Text Alignment
@@ -589,9 +590,10 @@ TRIGGER="event"
     FINDER_PROCESS=$(pgrep -l "Finder")
   done
 
-# After the Apple Setup completed. Now safe to grab the current user and user ID
-  CURRENT_USER=$(/usr/bin/stat -f "%Su" /dev/console)
-  CURRENT_USER_ID=$(id -u $CURRENT_USER)
+# After the Apple Setup completed. Now safe to grab the current user, UID, and Home Directory Path
+  CURRENT_USER=$(/bin/ls -l /dev/console | /usr/bin/awk '{print $3}')
+  CURRENT_USER_UID=$(/usr/bin/id -u "$CURRENT_USER")
+  CURRENT_USER_HOMEDIRECTORYPATH="$(dscl . -read /Users/$CURRENT_USER NFSHomeDirectory | awk -F ': ' '{print $2}')"
   echo "$(date "+%a %h %d %H:%M:%S"): Current user set to $CURRENT_USER (id: $CURRENT_USER_ID)." >> "$DEP_NOTIFY_DEBUG"
 
 # Stop DEPNotify if there was already a DEPNotify window running (from a PreStage package postinstall script).
@@ -601,7 +603,7 @@ TRIGGER="event"
     kill $PREVIOUS_DEP_NOTIFY_PROCESS
     PREVIOUS_DEP_NOTIFY_PROCESS=$(pgrep -l "DEPNotify" | cut -d " " -f1)
   done
-  
+
  # Stop BigHonkingText if it's running (from a PreStage package postinstall script).
  BIG_HONKING_TEXT_PROCESS=$(pgrep -l "BigHonkingText" | cut -d " " -f1)
   until [ "$BIG_HONKING_TEXT_PROCESS" = "" ]; do
@@ -609,7 +611,7 @@ TRIGGER="event"
     kill $BIG_HONKING_TEXT_PROCESS
     BIG_HONKING_TEXT_PROCESS=$(pgrep -l "BigHonkingText" | cut -d " " -f1)
   done
- 
+
 # Adding Check and Warning if Testing Mode is off and BOM files exist
   if [[ ( -f "$DEP_NOTIFY_LOG" || -f "$DEP_NOTIFY_DONE" ) && "$TESTING_MODE" = false ]]; then
     echo "$(date "+%a %h %d %H:%M:%S"): TESTING_MODE set to false but config files were found in /var/tmp. Letting user know and exiting." >> "$DEP_NOTIFY_DEBUG"
@@ -617,7 +619,6 @@ TRIGGER="event"
     echo "Command: MainTitle: $ERROR_BANNER_TITLE" >> "$DEP_NOTIFY_LOG"
     echo "Command: MainText: $ERROR_MAIN_TEXT" >> "$DEP_NOTIFY_LOG"
     echo "Status: $ERROR_STATUS" >> "$DEP_NOTIFY_LOG"
-##    sudo -u "$CURRENT_USER" open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
     launchctl asuser $CURRENT_USER_ID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
     sleep 5
     exit 1
@@ -628,18 +629,18 @@ TRIGGER="event"
     open -a "/Applications/$SELF_SERVICE_APP_NAME" --hide
 
   # Loop waiting on the branding image to properly show in the users library
-	SELF_SERVICE_COUNTER=0
-	CUSTOM_BRANDING_PNG="/Users/$CURRENT_USER/Library/Application Support/com.jamfsoftware.selfservice.mac/Documents/Images/brandingimage.png"
-	
-	until [ -f "$CUSTOM_BRANDING_PNG" ]; do
-		echo "$(date "+%a %h %d %H:%M:%S"): Waiting for branding image from Jamf Pro." >> "$DEP_NOTIFY_DEBUG"
-		sleep 1
-		(( SELF_SERVICE_COUNTER++ ))
-		if [ $SELF_SERVICE_COUNTER -gt $SELF_SERVICE_CUSTOM_WAIT ];then
-		   CUSTOM_BRANDING_PNG="/Applications/Self Service.app/Contents/Resources/AppIcon.icns"
-		   break
-		fi
-	done
+  SELF_SERVICE_COUNTER=0
+  CUSTOM_BRANDING_PNG="/Users/$CURRENT_USER/Library/Application Support/com.jamfsoftware.selfservice.mac/Documents/Images/brandingimage.png"
+
+  until [ -f "$CUSTOM_BRANDING_PNG" ]; do
+    echo "$(date "+%a %h %d %H:%M:%S"): Waiting for branding image from Jamf Pro." >> "$DEP_NOTIFY_DEBUG"
+    sleep 1
+    (( SELF_SERVICE_COUNTER++ ))
+    if [ $SELF_SERVICE_COUNTER -gt $SELF_SERVICE_CUSTOM_WAIT ];then
+       CUSTOM_BRANDING_PNG="/Applications/Self Service.app/Contents/Resources/AppIcon.icns"
+       break
+    fi
+  done
 
   # Setting Banner Image for DEP Notify to Self Service Custom Branding
     BANNER_IMAGE_PATH="$CUSTOM_BRANDING_PNG"
@@ -666,7 +667,7 @@ TRIGGER="event"
     INFO_PLIST_WRAPPER
 
   # The plist information below
-    DEP_NOTIFY_CONFIG_PLIST="/Users/$CURRENT_USER/Library/Preferences/menu.nomad.DEPNotify.plist"
+    DEP_NOTIFY_CONFIG_PLIST="$CURRENT_USER_HOMEDIRECTORYPATH/Library/Preferences/menu.nomad.DEPNotify.plist"
 
   # If testing mode is on, this will remove some old configuration files
     if [ "$TESTING_MODE" = true ] && [ -f "$DEP_NOTIFY_CONFIG_PLIST" ]; then rm "$DEP_NOTIFY_CONFIG_PLIST"; fi
