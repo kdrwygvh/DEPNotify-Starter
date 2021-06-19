@@ -33,6 +33,76 @@
 # More information at: https://github.com/jamfprofessionalservices/DEP-Notify
 
 #########################################################################################
+# Jamf Policy Variables. All variables are true/false
+#########################################################################################
+# Enable Dry Run Testing $4
+# Enable Fullscreen $5
+# Enable Caffeinate $6
+# Enable Self Service Custom Branding $7
+# Enable Completion Dropdown $8
+# EULA Enabled $9
+# Registration Enabled $10
+# Perform Initial Network Link Evaluation $11
+
+#########################################################################################
+# API Call Variables (Optional)
+#########################################################################################
+JPS_URL=$(defaults read /Library/Preferences/com.jamfsoftware.jamf jss_url)
+API_USER=""
+API_PASSWORD=""
+DEVICE_SERIAL_NUMBER=$(system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}')
+
+# Setting lockfile so that any backup enrollment policy knows we're running and doesn't start another provisioning run
+
+if [[ ! -f /var/tmp/provisioningInProgress.lock ]]; then
+  echo "starting provisioning as no other provisioning process owns the lock"
+  shlock -f /var/tmp/provisioningInProgress.lock -p "$(echo $PPID)"
+else
+  echo "provisioning has already started and is owned by process $(cat /var/tmp/provisioningInProgress.lock)"
+  exit 0
+fi
+
+######################################################################################
+# Network Link Evaluation
+######################################################################################
+PERFORM_NETWORK_LINK_EVALUATION=${11}
+if [[ "$PERFORM_NETWORK_LINK_EVALUATION" = "true" ]]; then
+  if [[ ! -f /usr/bin/sysdiagnose ]]; then
+    echo "sysdiagnose is not present, skipping network analysis"
+  else
+    sysdiagnose -v -A sysdiagnose.Enrollment.$(date "+%m.%d.%y") -n -F -S -u -Q -b -g -R
+    ## Gather Network State Details
+    DIAGNOSTICS_CONFGIGURATION="/var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")/WiFi/diagnostics-configuration.txt"
+    WIFI_SIGNAL_STATE=$(cat $DIAGNOSTICS_CONFGIGURATION | grep "Poor Wi-Fi Signal" | grep -c "Yes")
+    LEGACY_WIFI_STATE=$(cat $DIAGNOSTICS_CONFGIGURATION | grep "Legacy Wi-Fi Rates (802.11b)" | grep -c "Yes")
+    IOS_HOTSPOT_STATE=$(cat $DIAGNOSTICS_CONFGIGURATION | grep "iOS Personal Hotspot" | grep -c "Yes")
+    # Gather Network Reachability Details
+    DIAGNOSTICS_CONNECTIVITY="/var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")/WiFi/diagnostics-connectivity.txt"
+    APPLE_CURL_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | grep "Curl Apple" | grep -c "No")
+    APPLE_REACHABILITY_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | grep "Reach Apple" | grep -c "No")
+    DNS_RESOLUTION_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | grep "Resolve DNS" | grep -c "No")
+    WAN_PING_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | head -1 | grep "Ping WAN" | grep -c "No")
+    LAN_PING_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | head -1 | grep "Ping LAN" | grep -c "No")
+    # Gather Network Congestion Details
+    DIAGNOSTICS_ENVIRONMENT="/var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")/WiFi/diagnostics-environment.txt"
+    CONGESTED_NETWORK_RESULT=$(cat $DIAGNOSTICS_ENVIRONMENT | grep "Congested Wi-Fi Channel" | grep -c "Yes")
+    # Echo all results
+    echo "Wi-Fi Signal Result=$WIFI_SIGNAL_STATE"
+    echo "Legacy Wi-Fi Result=$LEGACY_WIFI_STATE"
+    echo "iOS Hotspot Result=$IOS_HOTSPOT_STATE"
+    echo "captive.apple.com curl Result=$APPLE_CURL_RESULT"
+    echo "apple.com reachability Result=$APPLE_REACHABILITY_RESULT"
+    echo "DNS Resolution Result=$DNS_RESOLUTION_RESULT"
+    echo "WAN Ping Result=$WAN_PING_RESULT"
+    echo "LAN Ping Result=$LAN_PING_RESULT"
+    echo "Congested Network Result=$CONGESTED_NETWORK_RESULT"
+    chown -R root:admin /var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")
+    chmod -R 700 /var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")
+  fi
+fi
+
+
+#########################################################################################
 # Testing Mode
 #########################################################################################
 # Testing flag will enable the following things to change:
