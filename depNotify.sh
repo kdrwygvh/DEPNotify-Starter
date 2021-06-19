@@ -963,4 +963,8 @@ fi
       fi
     fi
 
+# Removing Provisioning Lock File
+
+rm /var/tmp/provisioningInProgress.lock
+
 exit 0
