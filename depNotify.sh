@@ -509,6 +509,7 @@ TRIGGER="event"
 
 # Variables for File Paths
   JAMF_BINARY="/usr/local/bin/jamf"
+  JAMF_HELPER="/Library/Application Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper"
   FDE_SETUP_BINARY="/usr/bin/fdesetup"
   DEP_NOTIFY_APP="/Applications/Utilities/DEPNotify.app"
   DEP_NOTIFY_LOG="/var/tmp/depnotify.log"
@@ -532,6 +533,8 @@ TRIGGER="event"
     if [ "$9" != "" ]; then EULA_ENABLED="$9"; fi
   # Registration Mode
     if [ "${10}" != "" ]; then REGISTRATION_ENABLED="${10}"; fi
+  # Network Link Evaluation
+    if [ "${11}" != "" ]; then PERFORM_NETWORK_LINK_EVALUATION="${11}"; fi
 
 # Standard Testing Mode Enhancements
   if [ "$TESTING_MODE" = true ]; then
@@ -799,12 +802,56 @@ TRIGGER="event"
   chown "$CURRENT_USER":staff "$DEP_NOTIFY_CONFIG_PLIST"
   chmod 600 "$DEP_NOTIFY_CONFIG_PLIST"
 
+# Communicate to the user any failed results from the network link evaluation and make recommendations
+
+if [[ "$CONGESTED_NETWORK_RESULT" -eq 1 ]]; then
+  echo "Network link is congested, suggest to the user they try again on the backup trigger"
+  /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
+      -icon "$JAMF_HELPER_ICON" \
+      -title "Network" \
+      -description "Your current Wi-Fi network appears to be running slowly. We'll automatically try again in about 30 minutes. In the meantime, move to another network or move as close as you can to your Wi-Fi router..." \
+      -button1 "Stop" \
+      -defaultButton 1 \
+      -startlaunchd &>/dev/null
+  exit 0
+fi
+if [[ "$WIFI_SIGNAL_STATE" -eq 1 ]]; then
+  echo "Network link is weak, suggest to the user that they move as close as possible to the Wi-Fi source"
+  /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
+      -icon "$JAMF_HELPER_ICON" \
+      -title "Network" \
+      -description "Your current Wi-Fi signal appears to be weaker than normal. Please move as close as possible to your Wi-Fi router for the duration of the upgrade" \
+      -button1 "OK" \
+      -defaultButton 1 \
+      -startlaunchd &>/dev/null
+fi
+if [[ "$IOS_HOTSPOT_STATE" -eq 1 ]]; then
+  echo "Network link is a hotspot, warning the user to try again later"
+  /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
+      -icon "$JAMF_HELPER_ICON" \
+      -title "Network" \
+      -description "OS Upgrades are not supported on personal hotspot networks. Please try again later on another Wi-Fi network" \
+      -button1 "Stop" \
+      -defaultButton 1 \
+      -startlaunchd &>/dev/null
+  exit 2
+fi
+if [[ "$APPLE_CURL_RESULT" -eq 1 ]] || [[ "$APPLE_REACHABILITY_RESULT" -eq 1 ]] || [[ "$DNS_RESOLUTION_RESULT" -eq 1 ]]; then
+  echo "Connectivity to Apple's servers and/or DNS resolution tests failed on this network, suggesting to the user they try again later on a different network"
+  /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
+      -icon "$JAMF_HELPER_ICON" \
+      -title "Network" \
+      -description "This network doesn't appear to support Apple software updates, please try another Wi-Fi network" \
+      -button1 "Stop" \
+      -defaultButton 1 \
+      -startlaunchd &>/dev/null
+  exit 2
+fi
+
 # Opening the app after initial configuration
   if [ "$FULLSCREEN" = true ]; then
-##    sudo -u "$CURRENT_USER" open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG" -fullScreen
     launchctl asuser $CURRENT_USER_ID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG" -fullScreen
   elif [ "$FULLSCREEN" = false ]; then
-##    sudo -u "$CURRENT_USER" open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
     launchctl asuser $CURRENT_USER_ID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
   fi
 
