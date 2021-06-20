@@ -638,7 +638,7 @@ TRIGGER="event"
 
   # Loop waiting on the branding image to properly show in the users library
   SELF_SERVICE_COUNTER=0
-  CUSTOM_BRANDING_PNG="/Users/$CURRENT_USER/Library/Application Support/com.jamfsoftware.selfservice.mac/Documents/Images/brandingimage.png"
+  CUSTOM_BRANDING_PNG="$CURRENT_USER_HOMEDIRECTORYPATH/Library/Application Support/com.jamfsoftware.selfservice.mac/Documents/Images/brandingimage.png"
 
   until [ -f "$CUSTOM_BRANDING_PNG" ]; do
     echo "$(date "+%a %h %d %H:%M:%S"): Waiting for branding image from Jamf Pro." >> "$DEP_NOTIFY_DEBUG"
