@@ -70,22 +70,27 @@ if [[ "$PERFORM_NETWORK_LINK_EVALUATION" = "true" ]]; then
   if [[ ! -f /usr/bin/sysdiagnose ]]; then
     echo "sysdiagnose is not present, skipping network analysis"
   else
+  	/bin/launchctl asuser "$currentUserUID" "$jamfHelper" -windowType "utility" \
+    -icon "$logoPath" \
+    -title "Checking Network" \
+    -description "Performing initial network check. If the network is slow or fails certain reachability checks you'll be asked to try another Wi-Fi network..." \
+    -startlaunchd &
     sysdiagnose -v -A sysdiagnose.Enrollment.$(date "+%m.%d.%y") -n -F -S -u -Q -b -g -R
     ## Gather Network State Details
     DIAGNOSTICS_CONFGIGURATION="/var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")/WiFi/diagnostics-configuration.txt"
-    WIFI_SIGNAL_STATE=$(cat $DIAGNOSTICS_CONFGIGURATION | grep "Poor Wi-Fi Signal" | grep -c "Yes")
-    LEGACY_WIFI_STATE=$(cat $DIAGNOSTICS_CONFGIGURATION | grep "Legacy Wi-Fi Rates (802.11b)" | grep -c "Yes")
-    IOS_HOTSPOT_STATE=$(cat $DIAGNOSTICS_CONFGIGURATION | grep "iOS Personal Hotspot" | grep -c "Yes")
+    WIFI_SIGNAL_STATE=$(grep "Poor Wi-Fi Signal" $DIAGNOSTICS_CONFGIGURATION | grep -c "Yes")
+    LEGACY_WIFI_STATE=$(grep "Legacy Wi-Fi Rates (802.11b)" $DIAGNOSTICS_CONFGIGURATION | grep -c "Yes")
+    IOS_HOTSPOT_STATE=$(grep "iOS Personal Hotspot" $DIAGNOSTICS_CONFGIGURATION | grep -c "Yes")
     # Gather Network Reachability Details
     DIAGNOSTICS_CONNECTIVITY="/var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")/WiFi/diagnostics-connectivity.txt"
-    APPLE_CURL_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | grep "Curl Apple" | grep -c "No")
-    APPLE_REACHABILITY_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | grep "Reach Apple" | grep -c "No")
-    DNS_RESOLUTION_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | grep "Resolve DNS" | grep -c "No")
-    WAN_PING_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | head -1 | grep "Ping WAN" | grep -c "No")
-    LAN_PING_RESULT=$(cat $DIAGNOSTICS_CONNECTIVITY | head -1 | grep "Ping LAN" | grep -c "No")
+    APPLE_CURL_RESULT=$(grep "Curl Apple" $DIAGNOSTICS_CONNECTIVITY | grep -c "No")
+    APPLE_REACHABILITY_RESULT=$(grep "Reach Apple" $DIAGNOSTICS_CONNECTIVITY | grep -c "No")
+    DNS_RESOLUTION_RESULT=$(grep "Resolve DNS" $DIAGNOSTICS_CONNECTIVITY | grep -c "No")
+    WAN_PING_RESULT=$(head -1 $DIAGNOSTICS_CONNECTIVITY | grep "Ping WAN" | grep -c "No")
+    LAN_PING_RESULT=$(head -1 $DIAGNOSTICS_CONNECTIVITY | grep "Ping LAN" | grep -c "No")
     # Gather Network Congestion Details
     DIAGNOSTICS_ENVIRONMENT="/var/tmp/sysdiagnose.Enrollment.$(date "+%m.%d.%y")/WiFi/diagnostics-environment.txt"
-    CONGESTED_NETWORK_RESULT=$(cat $DIAGNOSTICS_ENVIRONMENT | grep "Congested Wi-Fi Channel" | grep -c "Yes")
+    CONGESTED_NETWORK_RESULT=$(grep "Congested Wi-Fi Channel" $DIAGNOSTICS_ENVIRONMENT | grep -c "Yes")
     # Echo all results
     echo "Wi-Fi Signal Result=$WIFI_SIGNAL_STATE"
     echo "Legacy Wi-Fi Result=$LEGACY_WIFI_STATE"
@@ -836,7 +841,7 @@ if [[ "$IOS_HOTSPOT_STATE" -eq 1 ]]; then
       -startlaunchd &>/dev/null
   exit 2
 fi
-if [[ "$APPLE_CURL_RESULT" -eq 1 ]] || [[ "$APPLE_REACHABILITY_RESULT" -eq 1 ]] || [[ "$DNS_RESOLUTION_RESULT" -eq 1 ]]; then
+if [[ "$APPLE_CURL_RESULT" -eq 1 || "$APPLE_REACHABILITY_RESULT" -eq 1 || "$DNS_RESOLUTION_RESULT" -eq 1 ]]; then
   echo "Connectivity to Apple's servers and/or DNS resolution tests failed on this network, suggesting to the user they try again later on a different network"
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
       -icon "$JAMF_HELPER_ICON" \
