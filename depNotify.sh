@@ -56,7 +56,7 @@ DEVICE_SERIAL_NUMBER=$(system_profiler SPHardwareDataType | grep Serial |  awk '
 
 if [[ ! -f /var/tmp/provisioningInProgress.lock ]]; then
   echo "starting provisioning as no other provisioning process owns the lock"
-  shlock -f /var/tmp/provisioningInProgress.lock -p "$(echo $PPID)"
+  /usr/bin/shlock -f /var/tmp/provisioningInProgress.lock -p "$(echo $PPID)"
 else
   echo "provisioning has already started and is owned by process $(cat /var/tmp/provisioningInProgress.lock)"
   exit 0
