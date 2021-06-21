@@ -71,7 +71,7 @@ if [[ "$PERFORM_NETWORK_LINK_EVALUATION" = "true" ]]; then
     echo "sysdiagnose is not present, skipping network analysis"
   else
   	/bin/launchctl asuser "$currentUserUID" "$jamfHelper" -windowType "utility" \
-    -icon "$logoPath" \
+    -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/General.icns" \
     -title "Checking Network" \
     -description "Performing initial network check. If the network is slow or fails certain reachability checks you'll be asked to try another Wi-Fi network..." \
     -startlaunchd &
@@ -599,7 +599,7 @@ TRIGGER="event"
   done
 
 # After the Apple Setup completed. Now safe to grab the current user, UID, and Home Directory Path
-  CURRENT_USER=$(/bin/ls -l /dev/console | /usr/bin/awk '{print $3}')
+  CURRENT_USER=$(/usr/bin/stat -f "%Su" /dev/console)
   CURRENT_USER_UID=$(/usr/bin/id -u "$CURRENT_USER")
   CURRENT_USER_HOMEDIRECTORYPATH="$(dscl . -read /Users/$CURRENT_USER NFSHomeDirectory | awk -F ': ' '{print $2}')"
   echo "$(date "+%a %h %d %H:%M:%S"): Current user set to $CURRENT_USER (id: $CURRENT_USER_ID)." >> "$DEP_NOTIFY_DEBUG"
@@ -812,7 +812,7 @@ TRIGGER="event"
 if [[ "$CONGESTED_NETWORK_RESULT" -eq 1 ]]; then
   echo "Network link is congested, suggest to the user they try again on the backup trigger"
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
-      -icon "$JAMF_HELPER_ICON" \
+      -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns" \
       -title "Network" \
       -description "Your current Wi-Fi network appears to be running slowly. We'll automatically try again in about 30 minutes. In the meantime, move to another network or move as close as you can to your Wi-Fi router..." \
       -button1 "Stop" \
@@ -823,7 +823,7 @@ fi
 if [[ "$WIFI_SIGNAL_STATE" -eq 1 ]]; then
   echo "Network link is weak, suggest to the user that they move as close as possible to the Wi-Fi source"
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
-      -icon "$JAMF_HELPER_ICON" \
+      -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns" \
       -title "Network" \
       -description "Your current Wi-Fi signal appears to be weaker than normal. Please move as close as possible to your Wi-Fi router for the duration of the upgrade" \
       -button1 "OK" \
@@ -833,7 +833,7 @@ fi
 if [[ "$IOS_HOTSPOT_STATE" -eq 1 ]]; then
   echo "Network link is a hotspot, warning the user to try again later"
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
-      -icon "$JAMF_HELPER_ICON" \
+      -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.iphone.icns" \
       -title "Network" \
       -description "OS Upgrades are not supported on personal hotspot networks. Please try again later on another Wi-Fi network" \
       -button1 "Stop" \
@@ -844,7 +844,7 @@ fi
 if [[ "$APPLE_CURL_RESULT" -eq 1 || "$APPLE_REACHABILITY_RESULT" -eq 1 || "$DNS_RESOLUTION_RESULT" -eq 1 ]]; then
   echo "Connectivity to Apple's servers and/or DNS resolution tests failed on this network, suggesting to the user they try again later on a different network"
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
-      -icon "$JAMF_HELPER_ICON" \
+      -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns" \
       -title "Network" \
       -description "This network doesn't appear to support Apple software updates, please try another Wi-Fi network" \
       -button1 "Stop" \
