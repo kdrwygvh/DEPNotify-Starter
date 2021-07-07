@@ -602,7 +602,7 @@ TRIGGER="event"
   CURRENT_USER=$(/usr/bin/stat -f "%Su" /dev/console)
   CURRENT_USER_UID=$(/usr/bin/id -u "$CURRENT_USER")
   CURRENT_USER_HOMEDIRECTORYPATH="$(dscl . -read /Users/$CURRENT_USER NFSHomeDirectory | awk -F ': ' '{print $2}')"
-  echo "$(date "+%a %h %d %H:%M:%S"): Current user set to $CURRENT_USER (id: $CURRENT_USER_ID)." >> "$DEP_NOTIFY_DEBUG"
+  echo "$(date "+%a %h %d %H:%M:%S"): Current user set to $CURRENT_USER (id: $CURRENT_USER_UID)." >> "$DEP_NOTIFY_DEBUG"
 
 # Stop DEPNotify if there was already a DEPNotify window running (from a PreStage package postinstall script).
  PREVIOUS_DEP_NOTIFY_PROCESS=$(pgrep -l "DEPNotify" | cut -d " " -f1)
@@ -627,7 +627,7 @@ TRIGGER="event"
     echo "Command: MainTitle: $ERROR_BANNER_TITLE" >> "$DEP_NOTIFY_LOG"
     echo "Command: MainText: $ERROR_MAIN_TEXT" >> "$DEP_NOTIFY_LOG"
     echo "Status: $ERROR_STATUS" >> "$DEP_NOTIFY_LOG"
-    launchctl asuser $CURRENT_USER_ID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
+    launchctl asuser $CURRENT_USER_UID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
     sleep 5
     exit 1
   fi
@@ -825,7 +825,7 @@ if [[ "$WIFI_SIGNAL_STATE" -eq 1 ]]; then
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
       -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns" \
       -title "Network" \
-      -description "Your current Wi-Fi signal appears to be weaker than normal. Please move as close as possible to your Wi-Fi router for the duration of the upgrade" \
+      -description "Your current Wi-Fi signal appears to be weaker than normal. Please move as close as possible to your Wi-Fi router for the duration of the upgrade..." \
       -button1 "OK" \
       -defaultButton 1 \
       -startlaunchd &>/dev/null
@@ -835,7 +835,7 @@ if [[ "$IOS_HOTSPOT_STATE" -eq 1 ]]; then
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
       -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/com.apple.iphone.icns" \
       -title "Network" \
-      -description "OS Upgrades are not supported on personal hotspot networks. Please try again later on another Wi-Fi network" \
+      -description "Computer setup is not supported on personal hotspot networks.  We'll automatically try again in about 30 minutes. In the meantime please connect to another Wi-Fi network..." \
       -button1 "Stop" \
       -defaultButton 1 \
       -startlaunchd &>/dev/null
@@ -846,7 +846,7 @@ if [[ "$APPLE_CURL_RESULT" -eq 1 || "$APPLE_REACHABILITY_RESULT" -eq 1 || "$DNS_
   /bin/launchctl asuser "$CURRENT_USER_UID" "$JAMF_HELPER" -windowType "utility" \
       -icon "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericNetworkIcon.icns" \
       -title "Network" \
-      -description "This network doesn't appear to support Apple software updates, please try another Wi-Fi network" \
+      -description "This network doesn't appear to support Apple software updates. We'll automatically try again in about 30 minutes. In the meantime please try another Wi-Fi network..." \
       -button1 "Stop" \
       -defaultButton 1 \
       -startlaunchd &>/dev/null
@@ -855,9 +855,9 @@ fi
 
 # Opening the app after initial configuration
   if [ "$FULLSCREEN" = true ]; then
-    launchctl asuser $CURRENT_USER_ID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG" -fullScreen
+    launchctl asuser $CURRENT_USER_UID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG" -fullScreen
   elif [ "$FULLSCREEN" = false ]; then
-    launchctl asuser $CURRENT_USER_ID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
+    launchctl asuser $CURRENT_USER_UID open -a "$DEP_NOTIFY_APP" --args -path "$DEP_NOTIFY_LOG"
   fi
 
 # Grabbing the DEP Notify Process ID for use later
